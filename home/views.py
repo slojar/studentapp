@@ -99,7 +99,6 @@ class HostelListAPIView(generics.ListAPIView):
     pagination_class = CustomPagination
     queryset = Hostel.objects.all().order_by("-id")
     serializer_class = HostelSerializer
-    lookup_field = "id"
 
 
 class FetchStudentAPIView(APIView, CustomPagination):
