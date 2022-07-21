@@ -32,7 +32,7 @@ class RegisterAPIView(APIView):
             return Response({"detail": "You are not permitted to perform this action"},
                             status=status.HTTP_401_UNAUTHORIZED)
 
-        if account_type != "student" and account_type != "admin":
+        if not (account_type == "student" or account_type == "admin"):
             return Response({"detail": f"You have selected a wrong account type: {account_type}"},
                             status=status.HTTP_400_BAD_REQUEST)
 
