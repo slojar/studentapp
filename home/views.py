@@ -3,8 +3,8 @@
 # 3. Admins should be able to fetch all student based on hostels and other search field
 from django.db.models import Q
 
-from .models import Profile, Hostel
-from .serializers import ProfileSerializer, HostelSerializer
+from .models import Profile, Hostel, Department
+from .serializers import ProfileSerializer, HostelSerializer, DepartmentSerializer
 from .pagination import CustomPagination
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -76,29 +76,32 @@ class RegisterAPIView(APIView):
         return Response(data)
 
 
-class HostelAPIView(APIView):
-    def post(self, request):
-        profile = Profile.objects.get(user=request.user)
+class HostelListCreateAPIView(generics.ListCreateAPIView):
+    pagination_class = CustomPagination
+    serializer_class = HostelSerializer
+
+    def get_queryset(self):
+        profile = Profile.objects.get(user=self.request.user)
         if profile.account_type == "student":
             return Response({"detail": "You are not permitted to perform this action"},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        hostel_name = request.data.get("hostelName")
-
-        if not hostel_name:
-            return Response({"detail": "hostelName is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        hostel = Hostel.objects.get_or_create(name=hostel_name)
-        data = HostelSerializer(hostel).data
-
-        return Response(data)
+        queryset = Hostel.objects.all().order_by("-id")
+        return queryset
 
 
-class HostelListAPIView(generics.ListAPIView):
-    permission_classes = []
+class DepartmentListCreateAPIView(generics.ListCreateAPIView):
+    serializer_class = DepartmentSerializer
     pagination_class = CustomPagination
-    queryset = Hostel.objects.all().order_by("-id")
-    serializer_class = HostelSerializer
+
+    def get_queryset(self):
+        profile = Profile.objects.get(user=self.request.user)
+        if profile.account_type == "student":
+            return Response({"detail": "You are not permitted to perform this action"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        queryset = Department.objects.all().order_by("-id")
+        return queryset
 
 
 class FetchStudentAPIView(APIView, CustomPagination):
