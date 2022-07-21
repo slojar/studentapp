@@ -7,3 +7,4 @@ urlpatterns = [
     path('departments/', views.DepartmentListCreateAPIView.as_view(), name="hostel"),
     path('student/', views.FetchStudentAPIView.as_view(), name="student"),
 ]
+
