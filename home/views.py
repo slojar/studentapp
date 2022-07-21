@@ -71,7 +71,7 @@ class RegisterAPIView(APIView):
             user_profile.matric_no = matric_no
         user_profile.save()
 
-        data = ProfileSerializer(user_profile).data
+        data = ProfileSerializer(user_profile, context={"request": request}).data
 
         return Response(data)
 
@@ -128,7 +128,9 @@ class FetchStudentAPIView(APIView, CustomPagination):
         queryset = Profile.objects.filter(query).order_by("-id").distinct()
 
         data = self.paginate_queryset(queryset, request)
-        serializer = self.get_paginated_response(ProfileSerializer(data, many=True).data).data
+        serializer = self.get_paginated_response(
+            ProfileSerializer(data, many=True, context={"request": request}).data
+        ).data
 
         return Response(serializer)
 
