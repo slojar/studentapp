@@ -17,6 +17,8 @@ class DepartmentSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     profile_picture = serializers.SerializerMethodField()
     user_detail = serializers.SerializerMethodField()
+    hostel = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
 
     def get_user_detail(self, obj):
         return obj.get_user_details()
@@ -29,6 +31,16 @@ class ProfileSerializer(serializers.ModelSerializer):
             if request:
                 image = request.build_absolute_uri(obj.profile_picture.url)
         return image
+
+    def get_hostel(self, obj):
+        if obj.hostel:
+            return obj.hostel.name
+        return None
+
+    def get_department(self, obj):
+        if obj.department:
+            return obj.department.name
+        return None
 
     class Meta:
         model = Profile
