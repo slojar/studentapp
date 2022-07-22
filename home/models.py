@@ -32,13 +32,6 @@ class Hostel(models.Model):
         return self.name
 
 
-class Department(models.Model):
-    name = models.CharField(max_length=200, unique=True)
-
-    def __str__(self):
-        return self.name
-
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True, blank=True)
@@ -46,7 +39,7 @@ class Profile(models.Model):
     profile_picture = models.ImageField(upload_to="profile_pictures", blank=True, null=True)
     gender = models.CharField(max_length=20, choices=GENDER_CHOICES, default="male")
     account_type = models.CharField(max_length=20, choices=ROLE_CHOICES, default="student")
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
+    department = models.CharField(max_length=100, blank=True, null=True)
     matric_no = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):

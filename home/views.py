@@ -1,10 +1,12 @@
 # 1. Default Admin should be able to register student and other admins
 # 2. Admins should be able to create HOSTELS and assign to student when registering the student
 # 3. Admins should be able to fetch all student based on hostels and other search field
+from django.contrib.auth import authenticate
 from django.db.models import Q
+from rest_framework.authtoken.models import Token
 
-from .models import Profile, Hostel, Department
-from .serializers import ProfileSerializer, HostelSerializer, DepartmentSerializer
+from .models import Profile, Hostel
+from .serializers import ProfileSerializer, HostelSerializer
 from .pagination import CustomPagination
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -24,7 +26,7 @@ class RegisterAPIView(APIView):
         phone_number = request.data.get("phoneNumber")
         account_type = request.data.get("accountType")
         hostel = request.data.get("hostelID", "")
-        department = request.data.get("departmentID", "")
+        department = request.data.get("department", "")
         matric_no = request.data.get("matricNo", "")
 
         logged_in_user_acct_type = Profile.objects.get(user=request.user).account_type
@@ -36,9 +38,9 @@ class RegisterAPIView(APIView):
             return Response({"detail": f"You have selected a wrong account type: {account_type}"},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        if not all([first_name, last_name, email, password, gender, profile_picture, phone_number, account_type]):
+        if not all([first_name, last_name, email, gender, profile_picture, phone_number, account_type]):
             return Response({
-                "detail": "All of the following are required fields: firstName, lastName, email, password, gender, "
+                "detail": "All of the following are required fields: firstName, lastName, email, gender, "
                           "profilePicture, phoneNumber, and accountType"
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -52,9 +54,14 @@ class RegisterAPIView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         if account_type == "student":
+            password = email
             if not all([hostel, department, matric_no]):
                 return Response({"detail": "Hostel, department, and matric number are required"},
                                 status=status.HTTP_400_BAD_REQUEST)
+
+        if account_type == "admin":
+            if not password:
+                return Response({"detail": "Password is required to create admin"})
 
         user = User.objects.create(
             email=email, first_name=first_name, last_name=last_name, username=email, password=make_password(password)
@@ -67,7 +74,7 @@ class RegisterAPIView(APIView):
         user_profile.account_type = account_type
         if account_type == "student":
             user_profile.hostel_id = hostel
-            user_profile.department_id = department
+            user_profile.department = department
             user_profile.matric_no = matric_no
         user_profile.save()
 
@@ -90,20 +97,6 @@ class HostelListCreateAPIView(generics.ListCreateAPIView):
         return queryset
 
 
-class DepartmentListCreateAPIView(generics.ListCreateAPIView):
-    serializer_class = DepartmentSerializer
-    pagination_class = CustomPagination
-
-    def get_queryset(self):
-        profile = Profile.objects.get(user=self.request.user)
-        if profile.account_type == "student":
-            return Response({"detail": "You are not permitted to perform this action"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        queryset = Department.objects.all().order_by("-id")
-        return queryset
-
-
 class FetchStudentAPIView(APIView, CustomPagination):
     def get(self, request):
         acct_type = Profile.objects.get(user=request.user).account_type
@@ -113,7 +106,7 @@ class FetchStudentAPIView(APIView, CustomPagination):
 
         hostel = request.GET.get("hostelID")
         gender = request.GET.get("gender")
-        department = request.GET.get("departmentID")
+        department = request.GET.get("department")
         search = request.GET.get("search")
 
         query = Q(account_type="student")
@@ -122,7 +115,7 @@ class FetchStudentAPIView(APIView, CustomPagination):
         if gender:
             query &= Q(gender__iexact=gender)
         if department:
-            query &= Q(department_id=department)
+            query &= Q(department__iexact=department)
         if search:
             query &= Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | \
                      Q(user__email=search) | Q(phone_number__icontains=search) | Q(matric_no__icontains=search)
@@ -135,4 +128,41 @@ class FetchStudentAPIView(APIView, CustomPagination):
         ).data
 
         return Response(serializer)
+
+
+class LoginAPIView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        if not all([email, password]):
+            return Response({"detail": "email and password are required fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(username=email, password=password)
+
+        if not user:
+            return Response({"detail": "User with these credentials not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        acct_type = Profile.objects.get(user=user).account_type
+        if acct_type == "student":
+            return Response({"detail": "You are not permitted to perform this action"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        user_auth = Token.objects.get(user=user).key
+        serializer = ProfileSerializer(Profile.objects.get(user=user), context={"request": request}).data
+        hostels = Hostel.objects.all().count()
+        admins = Profile.objects.filter(account_type="admin").count()
+        students = Profile.objects.filter(account_type="student").count()
+
+        return Response({
+            "detail": "Login Successful",
+            "token": str(user_auth),
+            "data": serializer,
+            "total_hostel": hostels,
+            "total_admin": admins,
+            "total_student": students
+        })
 
