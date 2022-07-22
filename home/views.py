@@ -29,6 +29,8 @@ class RegisterAPIView(APIView):
         department = request.data.get("department", "")
         matric_no = request.data.get("matricNo", "")
 
+        print(request.data)
+
         logged_in_user_acct_type = Profile.objects.get(user=request.user).account_type
         if logged_in_user_acct_type != "superadmin":
             return Response({"detail": "You are not permitted to perform this action"},
