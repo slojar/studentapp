@@ -10,7 +10,7 @@ urlpatterns = [
     path('login/', views.LoginAPIView.as_view(), name="login"),
     path('analysis/', views.AnalysisAPIView.as_view(), name="analysis"),
 
-    path('admin/', views.FetchAdminListView.as_view(), name="admin"),
-    path('admin/<int:pk>/', views.ViewDeleteAdminView.as_view(), name="admin-detail"),
+    path('admins/', views.FetchAdminListView.as_view(), name="admin"),
+    path('admins/<int:pk>/', views.ViewDeleteAdminView.as_view(), name="admin-detail"),
 ]
 
