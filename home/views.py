@@ -99,6 +99,20 @@ class HostelListCreateAPIView(generics.ListCreateAPIView):
         return queryset
 
 
+class DeleteHostelView(generics.DestroyAPIView):
+    serializer_class = HostelSerializer
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        profile = Profile.objects.get(user=self.request.user)
+        if profile.account_type == "student":
+            return Response({"detail": "You are not permitted to perform this action"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        queryset = Hostel.objects.all().order_by("-id")
+        return queryset
+
+
 class FetchStudentAPIView(APIView, CustomPagination):
     def get(self, request):
         acct_type = Profile.objects.get(user=request.user).account_type
@@ -120,7 +134,7 @@ class FetchStudentAPIView(APIView, CustomPagination):
             query &= Q(department__iexact=department)
         if search:
             query &= Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | \
-                     Q(user__email=search) | Q(phone_number__icontains=search) | Q(matric_no__icontains=search)
+                     Q(user__email=search) | Q(phone_number__icontains=search) | Q(matric_no__iexact=search)
 
         queryset = Profile.objects.filter(query).order_by("-id").distinct()
 
@@ -130,6 +144,45 @@ class FetchStudentAPIView(APIView, CustomPagination):
         ).data
 
         return Response(serializer)
+
+    def put(self, request, pk):
+        acct_type = Profile.objects.get(user=request.user).account_type
+        if acct_type == "student":
+            return Response({"detail": "You are not permitted to perform this action"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            profile = Profile.objects.get(id=pk, account_type="student")
+        except Exception as err:
+            return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.profile_picture = request.data.get("profilePicture")
+        profile.user.first_name = request.data.get("firstName")
+        profile.user.last_name = request.data.get("lastName")
+        profile.user.email = request.data.get("email")
+        profile.gender = request.data.get("gender")
+        profile.phone_number = request.data.get("phoneNumber")
+        profile.hostel_id = request.data.get("hostelID")
+        profile.department = request.data.get("department")
+        profile.matric_no = request.data.get("matricNo")
+        profile.save()
+
+        return Response({"detail": "Profile updated successfully"})
+
+    def delete(self, request, pk):
+
+        acct_ = Profile.objects.get(user=request.user).account_type
+        if acct_ == "student":
+            return Response({"detail": "You are not permitted to perform this action"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            profile = Profile.objects.get(id=pk, account_type="student")
+        except Exception as err:
+            return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.delete()
+        return Response({"detail": "Profile deleted successfully"})
 
 
 class LoginAPIView(APIView):
@@ -155,16 +208,40 @@ class LoginAPIView(APIView):
 
         user_auth = Token.objects.get(user=user).key
         serializer = ProfileSerializer(Profile.objects.get(user=user), context={"request": request}).data
+
+        return Response({
+            "detail": "Login Successful",
+            "token": str(user_auth),
+            "data": serializer
+        })
+
+
+class AnalysisAPIView(APIView):
+    def get(self, request):
+
         hostels = Hostel.objects.all().count()
         admins = Profile.objects.filter(account_type="admin").count()
         students = Profile.objects.filter(account_type="student").count()
 
         return Response({
-            "detail": "Login Successful",
-            "token": str(user_auth),
-            "data": serializer,
             "total_hostel": hostels,
             "total_admin": admins,
             "total_student": students
         })
+
+
+class FetchAdminListView(generics.ListAPIView):
+    serializer_class = ProfileSerializer
+    queryset = Profile.objects.filter(account_type="admin").order_by('-id')
+    pagination_class = CustomPagination
+
+
+class ViewDeleteAdminView(generics.RetrieveDestroyAPIView):
+    serializer_class = ProfileSerializer
+    queryset = Profile.objects.filter(account_type="admin")
+    lookup_field = "pk"
+
+
+
+
 
