@@ -177,7 +177,7 @@ class FetchStudentAPIView(APIView, CustomPagination):
                             status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-            profile = Profile.objects.get(id=pk, account_type="student")
+            profile = Profile.objects.get(id=pk, account_type="student").user
         except Exception as err:
             return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
