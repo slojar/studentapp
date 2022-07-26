@@ -238,7 +238,8 @@ class FetchAdminListView(generics.ListAPIView):
 
 class ViewDeleteAdminView(generics.RetrieveDestroyAPIView):
     serializer_class = ProfileSerializer
-    queryset = Profile.objects.filter(account_type="admin")
+    queryset = User.objects.filter(profile__account_type="admin")
+    # queryset = Profile.objects.filter(account_type="admin")
     lookup_field = "pk"
 
 
