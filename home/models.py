@@ -41,6 +41,8 @@ class Profile(models.Model):
     account_type = models.CharField(max_length=20, choices=ROLE_CHOICES, default="student")
     department = models.CharField(max_length=100, blank=True, null=True)
     matric_no = models.CharField(max_length=100, blank=True, null=True)
+    school = models.CharField(max_length=100, blank=True, null=True)
+    level = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"ID: {self.pk}, user: {self.user}"

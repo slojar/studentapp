@@ -28,6 +28,8 @@ class RegisterAPIView(APIView):
         hostel = request.data.get("hostelID", "")
         department = request.data.get("department", "")
         matric_no = request.data.get("matricNo", "")
+        school = request.data.get("school", "")
+        level = request.data.get("level", "")
 
         print(request.data)
 
@@ -57,8 +59,8 @@ class RegisterAPIView(APIView):
 
         if account_type == "student":
             password = email
-            if not all([hostel, department, matric_no]):
-                return Response({"detail": "Hostel, department, and matric number are required"},
+            if not all([hostel, department, matric_no, school, level]):
+                return Response({"detail": "Hostel, department, school, level, and matric number are required"},
                                 status=status.HTTP_400_BAD_REQUEST)
 
         if account_type == "admin":
@@ -78,6 +80,8 @@ class RegisterAPIView(APIView):
             user_profile.hostel_id = hostel
             user_profile.department = department
             user_profile.matric_no = matric_no
+            user_profile.school = school
+            user_profile.level = level
         user_profile.save()
 
         data = ProfileSerializer(user_profile, context={"request": request}).data
@@ -99,7 +103,7 @@ class HostelListCreateAPIView(generics.ListCreateAPIView):
         return queryset
 
 
-class DeleteHostelView(generics.DestroyAPIView):
+class UpdateDeleteHostelView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = HostelSerializer
     lookup_field = 'pk'
 
@@ -123,6 +127,8 @@ class FetchStudentAPIView(APIView, CustomPagination):
         hostel = request.GET.get("hostelID")
         gender = request.GET.get("gender")
         department = request.GET.get("department")
+        school = request.GET.get("school")
+        level = request.GET.get("level")
         search = request.GET.get("search")
 
         query = Q(account_type="student")
@@ -132,6 +138,10 @@ class FetchStudentAPIView(APIView, CustomPagination):
             query &= Q(gender__iexact=gender)
         if department:
             query &= Q(department__iexact=department)
+        if school:
+            query &= Q(school__iexact=school)
+        if level:
+            query &= Q(level__iexact=level)
         if search:
             query &= Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | \
                      Q(user__email=search) | Q(phone_number__icontains=search) | Q(matric_no__iexact=search)
@@ -165,6 +175,9 @@ class FetchStudentAPIView(APIView, CustomPagination):
         profile.hostel_id = request.data.get("hostelID")
         profile.department = request.data.get("department")
         profile.matric_no = request.data.get("matricNo")
+        profile.school = request.data.get("school")
+        profile.level = request.data.get("level")
+        profile.user.save()
         profile.save()
 
         return Response({"detail": "Profile updated successfully"})
@@ -230,17 +243,79 @@ class AnalysisAPIView(APIView):
         })
 
 
-class FetchAdminListView(generics.ListAPIView):
-    serializer_class = ProfileSerializer
-    queryset = Profile.objects.filter(account_type="admin").order_by('-id')
-    pagination_class = CustomPagination
+# class FetchAdminListView(generics.ListAPIView):
+#     serializer_class = ProfileSerializer
+#     queryset = Profile.objects.filter(account_type="admin").order_by('-id')
+#     pagination_class = CustomPagination
 
 
-class ViewDeleteAdminView(generics.RetrieveDestroyAPIView):
-    serializer_class = ProfileSerializer
-    queryset = User.objects.filter(profile__account_type="admin")
-    # queryset = Profile.objects.filter(account_type="admin")
-    lookup_field = "pk"
+class FetchAdminAPIView(APIView, CustomPagination):
+    def get(self, request, pk=None):
+        try:
+            acct_type = Profile.objects.get(user=request.user).account_type
+            if acct_type == "student":
+                return Response({"detail": "You are not permitted to perform this action"},
+                                status=status.HTTP_401_UNAUTHORIZED)
+
+            if pk:
+                serializer = ProfileSerializer(
+                    Profile.objects.get(account_type="admin", id=pk), context={"request": request}
+                ).data
+            else:
+                queryset = Profile.objects.filter(account_type="admin").order_by("-id").distinct()
+
+                data = self.paginate_queryset(queryset, request)
+                serializer = self.get_paginated_response(
+                    ProfileSerializer(data, many=True, context={"request": request}).data
+                ).data
+        except Exception as err:
+            return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer)
+
+    def put(self, request, pk):
+        acct_type = Profile.objects.get(user=request.user).account_type
+        if acct_type == "student":
+            return Response({"detail": "You are not permitted to perform this action"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            profile = Profile.objects.get(id=pk, account_type="admin")
+        except Exception as err:
+            return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.user.first_name = request.data.get("firstName")
+        profile.profile_picture = request.data.get("profilePicture")
+        profile.user.email = request.data.get("email")
+        profile.user.last_name = request.data.get("lastName")
+        profile.phone_number = request.data.get("phoneNumber")
+        profile.gender = request.data.get("gender")
+        profile.user.save()
+        profile.save()
+
+        return Response({"detail": "Profile updated successfully"})
+
+    def delete(self, request, pk):
+
+        acct_ = Profile.objects.get(user=request.user).account_type
+        if acct_ == "student":
+            return Response({"detail": "You are not permitted to perform this action"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            profile = Profile.objects.get(id=pk, account_type="admin").user
+        except Exception as err:
+            return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.delete()
+        return Response({"detail": "Admin Profile deleted successfully"})
+
+
+
+# class ViewDeleteAdminView(generics.RetrieveDestroyAPIView):
+#     serializer_class = ProfileSerializer
+#     queryset = User.objects.filter(profile__account_type="admin")
+#     # queryset = Profile.objects.filter(account_type="admin")
+#     lookup_field = "pk"
 
 
 
