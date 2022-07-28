@@ -132,11 +132,11 @@ class FetchStudentAPIView(APIView, CustomPagination):
         search = request.GET.get("search")
         try:
 
-            query = Q(account_type="student")
-            if hostel:
-                hostel = Hostel.objects.get(id=hostel).id
-                print(hostel)
-                query &= Q(room__hostel_id=hostel)
+            # query = Q(account_type="student")
+            # if hostel:
+            #     hostel = Hostel.objects.get(id=hostel).id
+            #     print(hostel)
+            #     query &= Q(room__hostel_id=hostel)
 
             # if gender:
             #     query &= Q(gender__iexact=gender)
@@ -150,7 +150,8 @@ class FetchStudentAPIView(APIView, CustomPagination):
             #     query &= Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | \
             #              Q(user__email=search) | Q(phone_number__icontains=search) | Q(matric_no__iexact=search)
 
-            queryset = Profile.objects.filter(query).order_by("-id").distinct()
+            # queryset = Profile.objects.filter(query).order_by("-id").distinct()
+            queryset = Profile.objects.filter(room__hostel_id=hostel).order_by("-id").distinct()
             print(queryset)
 
             data = self.paginate_queryset(queryset, request)
