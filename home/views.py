@@ -130,28 +130,33 @@ class FetchStudentAPIView(APIView, CustomPagination):
         school = request.GET.get("school")
         level = request.GET.get("level")
         search = request.GET.get("search")
+        try:
+            hostel = Hostel.objects.get(id=hostel)
 
-        query = Q(account_type="student")
-        if hostel:
-            query &= Q(room__hostel__id=hostel)
-        if gender:
-            query &= Q(gender__iexact=gender)
-        if department:
-            query &= Q(department__iexact=department)
-        if school:
-            query &= Q(school__iexact=school)
-        if level:
-            query &= Q(level__iexact=level)
-        if search:
-            query &= Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | \
-                     Q(user__email=search) | Q(phone_number__icontains=search) | Q(matric_no__iexact=search)
+            query = Q(account_type="student")
+            if hostel:
+                query &= Q(room__hostel__in=[hostel])
+            if gender:
+                query &= Q(gender__iexact=gender)
+            if department:
+                query &= Q(department__iexact=department)
+            if school:
+                query &= Q(school__iexact=school)
+            if level:
+                query &= Q(level__iexact=level)
+            if search:
+                query &= Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | \
+                         Q(user__email=search) | Q(phone_number__icontains=search) | Q(matric_no__iexact=search)
 
-        queryset = Profile.objects.filter(query).order_by("-id").distinct()
+            queryset = Profile.objects.filter().order_by("-id").distinct()
+            queryset = Profile.objects.filter(query).order_by("-id").distinct()
 
-        data = self.paginate_queryset(queryset, request)
-        serializer = self.get_paginated_response(
-            ProfileSerializer(data, many=True, context={"request": request}).data
-        ).data
+            data = self.paginate_queryset(queryset, request)
+            serializer = self.get_paginated_response(
+                ProfileSerializer(data, many=True, context={"request": request}).data
+            ).data
+        except Exception as err:
+            return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer)
 
