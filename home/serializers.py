@@ -38,7 +38,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                 image = request.build_absolute_uri(obj.profile_picture.url)
         return image
 
-    def get_hostel(self, obj):
+    def get_room(self, obj):
         if obj.room:
             data = {
                 "room_id": obj.room.id,
