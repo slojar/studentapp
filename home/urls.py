@@ -15,5 +15,9 @@ urlpatterns = [
 
     path('admins/', views.FetchAdminAPIView.as_view(), name="admin"),
     path('admins/<int:pk>/', views.FetchAdminAPIView.as_view(), name="admin-detail"),
+
+    path('rooms/', views.ListCreateRoomView.as_view(), name="rooms"),
+    path('rooms/<int:pk>/', views.UpdateDeleteRoomView.as_view(), name="rooms-detail"),
+
 ]
 

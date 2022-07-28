@@ -1,8 +1,21 @@
 from rest_framework import serializers
-from .models import Profile, Hostel
+from .models import Profile, Hostel, Room
+
+
+class RoomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        exclude = []
 
 
 class HostelSerializer(serializers.ModelSerializer):
+    rooms = serializers.SerializerMethodField()
+
+    def get_rooms(self, obj):
+        if Room.objects.filter(hostel=obj).exists():
+            return RoomSerializer(Room.objects.filter(hostel=obj), many=True).data
+        return None
+
     class Meta:
         model = Hostel
         exclude = []
@@ -11,7 +24,7 @@ class HostelSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     profile_picture = serializers.SerializerMethodField()
     user_detail = serializers.SerializerMethodField()
-    hostel = serializers.SerializerMethodField()
+    room = serializers.SerializerMethodField()
 
     def get_user_detail(self, obj):
         return obj.get_user_details()
@@ -26,8 +39,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         return image
 
     def get_hostel(self, obj):
-        if obj.hostel:
-            return obj.hostel.name
+        if obj.room:
+            data = {
+                "room_id": obj.room.id,
+                "room_name": obj.room.name,
+                "hostel_name": obj.room.hostel.name
+            }
+            return data
         return None
 
     class Meta:

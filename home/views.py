@@ -5,8 +5,8 @@ from django.contrib.auth import authenticate
 from django.db.models import Q
 from rest_framework.authtoken.models import Token
 
-from .models import Profile, Hostel
-from .serializers import ProfileSerializer, HostelSerializer
+from .models import Profile, Hostel, Room
+from .serializers import ProfileSerializer, HostelSerializer, RoomSerializer
 from .pagination import CustomPagination
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -25,7 +25,7 @@ class RegisterAPIView(APIView):
         profile_picture = request.data.get("profilePicture")
         phone_number = request.data.get("phoneNumber")
         account_type = request.data.get("accountType")
-        hostel = request.data.get("hostelID", "")
+        room = request.data.get("roomID", "")
         department = request.data.get("department", "")
         matric_no = request.data.get("matricNo", "")
         school = request.data.get("school", "")
@@ -59,7 +59,7 @@ class RegisterAPIView(APIView):
 
         if account_type == "student":
             password = email
-            if not all([hostel, department, matric_no, school, level]):
+            if not all([room, department, matric_no, school, level]):
                 return Response({"detail": "Hostel, department, school, level, and matric number are required"},
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -77,7 +77,7 @@ class RegisterAPIView(APIView):
         user_profile.gender = gender
         user_profile.account_type = account_type
         if account_type == "student":
-            user_profile.hostel_id = hostel
+            user_profile.room_id = room
             user_profile.department = department
             user_profile.matric_no = matric_no
             user_profile.school = school
@@ -172,7 +172,7 @@ class FetchStudentAPIView(APIView, CustomPagination):
         profile.user.email = request.data.get("email")
         profile.gender = request.data.get("gender")
         profile.phone_number = request.data.get("phoneNumber")
-        profile.hostel_id = request.data.get("hostelID")
+        profile.room_id = request.data.get("roomID")
         profile.department = request.data.get("department")
         profile.matric_no = request.data.get("matricNo")
         profile.school = request.data.get("school")
@@ -309,6 +309,17 @@ class FetchAdminAPIView(APIView, CustomPagination):
         profile.delete()
         return Response({"detail": "Admin Profile deleted successfully"})
 
+
+class ListCreateRoomView(generics.ListCreateAPIView):
+    pagination_class = CustomPagination
+    serializer_class = RoomSerializer
+    queryset = Room.objects.all().order_by("-id")
+
+
+class UpdateDeleteRoomView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = RoomSerializer
+    queryset = Room.objects.all()
+    lookup_field = "pk"
 
 
 # class ViewDeleteAdminView(generics.RetrieveDestroyAPIView):

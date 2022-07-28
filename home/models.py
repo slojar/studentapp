@@ -32,9 +32,17 @@ class Hostel(models.Model):
         return self.name
 
 
+class Room(models.Model):
+    hostel = models.ForeignKey(Hostel, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True, blank=True)
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
     phone_number = models.CharField(max_length=11, default="")
     profile_picture = models.ImageField(upload_to="profile_pictures", blank=True, null=True)
     gender = models.CharField(max_length=20, choices=GENDER_CHOICES, default="male")
