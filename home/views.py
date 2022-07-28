@@ -60,7 +60,7 @@ class RegisterAPIView(APIView):
         if account_type == "student":
             password = email
             if not all([room, department, matric_no, school, level]):
-                return Response({"detail": "Hostel, department, school, level, and matric number are required"},
+                return Response({"detail": "room, department, school, level, and matric number are required"},
                                 status=status.HTTP_400_BAD_REQUEST)
 
         if account_type == "admin":
