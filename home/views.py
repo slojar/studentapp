@@ -148,7 +148,6 @@ class FetchStudentAPIView(APIView, CustomPagination):
                 query &= Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | \
                          Q(user__email=search) | Q(phone_number__icontains=search) | Q(matric_no__iexact=search)
 
-            queryset = Profile.objects.filter().order_by("-id").distinct()
             queryset = Profile.objects.filter(query).order_by("-id").distinct()
 
             data = self.paginate_queryset(queryset, request)
