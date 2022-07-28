@@ -133,7 +133,7 @@ class FetchStudentAPIView(APIView, CustomPagination):
 
         query = Q(account_type="student")
         if hostel:
-            query &= Q(hostel__id=hostel)
+            query &= Q(room__hostel__id=hostel)
         if gender:
             query &= Q(gender__iexact=gender)
         if department:
@@ -166,17 +166,41 @@ class FetchStudentAPIView(APIView, CustomPagination):
         except Exception as err:
             return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
-        profile.profile_picture = request.data.get("profilePicture")
-        profile.user.first_name = request.data.get("firstName")
-        profile.user.last_name = request.data.get("lastName")
-        profile.user.email = request.data.get("email")
-        profile.gender = request.data.get("gender")
-        profile.phone_number = request.data.get("phoneNumber")
-        profile.room_id = request.data.get("roomID")
-        profile.department = request.data.get("department")
-        profile.matric_no = request.data.get("matricNo")
-        profile.school = request.data.get("school")
-        profile.level = request.data.get("level")
+        last_name = request.data.get("lastName")
+        first_name = request.data.get("firstName")
+        email = request.data.get("email")
+        gender = request.data.get("gender")
+        profile_picture = request.data.get("profilePicture")
+        phone_number = request.data.get("phoneNumber")
+        department = request.data.get("department", "")
+        room = request.data.get("roomID", "")
+        matric_no = request.data.get("matricNo", "")
+        school = request.data.get("school", "")
+        level = request.data.get("level", "")
+
+        if profile_picture:
+            profile.profile_picture = request.data.get("profilePicture")
+        if first_name:
+            profile.user.first_name = first_name
+        if last_name:
+            profile.user.last_name = last_name
+        if email:
+            profile.user.email = email
+            profile.user.username = email
+        if gender:
+            profile.gender = gender
+        if phone_number:
+            profile.phone_number = phone_number
+        if room:
+            profile.room_id = room
+        if department:
+            profile.department = department
+        if matric_no:
+            profile.matric_no = matric_no
+        if school:
+            profile.school = school
+        if level:
+            profile.level = level
         profile.user.save()
         profile.save()
 
@@ -283,12 +307,29 @@ class FetchAdminAPIView(APIView, CustomPagination):
         except Exception as err:
             return Response({"detail": "An error has occurred", "error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
-        profile.user.first_name = request.data.get("firstName")
-        profile.profile_picture = request.data.get("profilePicture")
-        profile.user.email = request.data.get("email")
-        profile.user.last_name = request.data.get("lastName")
-        profile.phone_number = request.data.get("phoneNumber")
-        profile.gender = request.data.get("gender")
+        first_name = request.data.get("firstName")
+        email = request.data.get("email")
+        last_name = request.data.get("lastName")
+        password = request.data.get("password")
+        gender = request.data.get("gender")
+        profile_picture = request.data.get("profilePicture")
+        phone_number = request.data.get("phoneNumber")
+
+        if first_name:
+            profile.user.first_name = request.data.get("firstName")
+        if profile_picture:
+            profile.profile_picture = profile_picture
+        if email:
+            profile.user.email = email
+            profile.user.username = email
+        if last_name:
+            profile.user.last_name = last_name
+        if phone_number:
+            profile.phone_number = phone_number
+        if gender:
+            profile.gender = gender
+        if password:
+            profile.user.password = make_password(password)
         profile.user.save()
         profile.save()
 
