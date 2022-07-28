@@ -134,8 +134,8 @@ class FetchStudentAPIView(APIView, CustomPagination):
 
             query = Q(account_type="student")
             if hostel:
-                hostel = Hostel.objects.get(id=hostel)
-                query &= Q(room__hostel=hostel)
+                hostel = Hostel.objects.get(id=hostel).id
+                query &= Q(room__hostel_id=hostel)
             if gender:
                 query &= Q(gender__iexact=gender)
             if department:
